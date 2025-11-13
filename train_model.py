@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     confusion_matrix,
@@ -24,12 +24,15 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 print("Training Random Forest model...")
+
 model = RandomForestClassifier(
-    n_estimators=100,
-    max_depth=12,
+    n_estimators=250,
+    max_depth=10,
+    min_samples_leaf=5,
     random_state=42,
     class_weight='balanced'
 )
+
 model.fit(X_train, y_train)
 print("Model trained successfully.\n")
 
@@ -39,13 +42,17 @@ test_accuracy = model.score(X_test, y_test)
 print(f"Training Accuracy: {train_accuracy * 100:.2f}%")
 print(f"Testing Accuracy:  {test_accuracy * 100:.2f}%\n")
 
+cv_scores = cross_val_score(model, X, y, cv=5, scoring='balanced_accuracy')
+print(f"5-Fold Cross-Validation Balanced Accuracy: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}\n")
+
 y_pred = model.predict(X_test)
+
 print("Classification Report:")
-print(classification_report(y_test, y_pred, zero_division=0))
+print(classification_report(y_test, y_pred, labels=model.classes_, zero_division=0))
 
 plt.figure(figsize=(6, 4))
-importances = model.feature_importances_
-plt.barh(X.columns, importances, color='skyblue')
+importances = pd.Series(model.feature_importances_, index=X.columns).sort_values(ascending=True)
+plt.barh(importances.index, importances.values, color='skyblue')
 plt.title("Feature Importance")
 plt.xlabel("Importance Score")
 plt.ylabel("Features")
@@ -66,7 +73,7 @@ plt.subplots_adjust(bottom=0.35, top=0.9)
 plt.show()
 
 plt.figure(figsize=(10, 5))
-sns.countplot(x='status', data=data)
+sns.countplot(x='status', data=data, palette='tab20')
 plt.title("Class Distribution in Dataset")
 plt.xticks(rotation=90)
 plt.tight_layout()
