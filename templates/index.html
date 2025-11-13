@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scholarship & Course Outcome Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #e8f0ff, #f6faff);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px;
+      color: #222;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 720px;
+      transition: all 0.3s ease;
+    }
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    p {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #666;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 18px;
+    }
+    label {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    input {
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    button {
+      flex: 1;
+      padding: 12px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.25s;
+      font-weight: 600;
+    }
+    button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn-before { background: #007bff; color: white; }
+    .btn-after { background: #ff9800; color: white; }
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+    .success { background: #e8fce8; color: #006600; border: 1px solid #b9f1b9; }
+    .error { background: #ffeaea; color: #c30000; border: 1px solid #ffb3b3; }
+    .info { background: #eef3ff; color: #1e40af; border: 1px solid #cbd5ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Scholarship & Course Outcome Predictor</h1>
+    <p>Enter your scores to predict your academic result or required final marks.</p>
+
+    <div class="form-group">
+      <label>Attendance (%)</label>
+      <input id="attendance" type="number" min="0" max="100" step="1" value="85" />
+    </div>
+    <div class="form-group">
+      <label>RegMid Score</label>
+      <input id="regMid" type="number" min="0" max="100" step="1" value="60" />
+    </div>
+    <div class="form-group">
+      <label>RegEnd Score</label>
+      <input id="regEnd" type="number" min="0" max="100" step="1" value="65" />
+    </div>
+    <div class="form-group">
+      <label>Final Score (optional for prediction after final)</label>
+      <input id="final" type="number" min="0" max="100" step="1" />
+    </div>
+    <div class="form-group" id="fx-field" style="display:none;">
+      <label>FX (Retake) Score</label>
+      <input id="fx_score" type="number" min="0" max="100" step="1" />
+    </div>
+
+    <div class="buttons">
+      <button class="btn-before" onclick="calculateBeforeFinal()">Calculate Before Final</button>
+      <button class="btn-after" onclick="calculateAfterFinal()">Calculate After Final</button>
+    </div>
+
+    <div id="output" class="result info">Awaiting input...</div>
+  </div>
+
+  <script>
+    function format(v) {
+      return Math.round(parseFloat(v));
+    }
+
+    async function calculateBeforeFinal() {
+      const regMid = document.getElementById("regMid").value;
+      const regEnd = document.getElementById("regEnd").value;
+      const attendance = document.getElementById("attendance").value;
+      const output = document.getElementById("output");
+
+      if (!regMid || !regEnd || !attendance) {
+        output.className = "result error";
+        output.innerHTML = "Please fill in all fields correctly.";
+        return;
+      }
+
+      const res = await fetch("/api/before_final", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({regMid, regEnd, attendance})
+      });
+      const data = await res.json();
+
+      output.className = "result info";
+      output.innerHTML = 
+        `Required Final Exam Scores:\n` +
+        `To PASS (≥50): ${format(data.needed_for_pass)}\n` +
+        `To get SCHOLARSHIP (≥70): ${format(data.needed_for_scholarship)}`;
+    }
+
+    async function calculateAfterFinal() {
+      const regMid = document.getElementById("regMid").value;
+      const regEnd = document.getElementById("regEnd").value;
+      const attendance = document.getElementById("attendance").value;
+      const Final = document.getElementById("final").value;
+      const fx_score = document.getElementById("fx_score").value;
+      const fxField = document.getElementById("fx-field");
+      const output = document.getElementById("output");
+
+      const res = await fetch("/api/after_final", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({regMid, regEnd, attendance, Final, fx_score})
+      });
+      const data = await res.json();
+      const result = data.details;
+
+      if (result.status === "RETAKE") {
+        fxField.style.display = "block";
+        output.className = "result info";
+        output.innerHTML = "FX (retake required). Enter FX score and click again.";
+        return;
+      } else {
+        fxField.style.display = "none";
+      }
+
+      let cls = "result ";
+      if (result.status === "PASS") cls += "success";
+      else if (result.status === "FAIL") cls += "error";
+      else cls += "info";
+
+      output.className = cls;
+      let msg = `${result.category}\nReason: ${result.reason}`;
+      if (result.total !== null) msg += `\nTotal Score: ${format(result.total)}`;
+      output.innerHTML = msg;
+    }
+  </script>
+</body>
+</html>
