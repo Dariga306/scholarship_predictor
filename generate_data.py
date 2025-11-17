@@ -4,12 +4,11 @@ import numpy as np
 np.random.seed(42)
 
 def generate_student_data(n=2700):
-    # Контролируемые вероятности классов
     status_probs = {
         "Summer course (Final < 25)": 0.25,
         "Summer course (low attendance)": 0.20,
         "Summer course (low mid/end)": 0.20,
-        "Fail (total < 45)": 0.05,
+        "Fail (total < 25)": 0.05,
         "Fail (total < 50)": 0.05,
         "FX  (retake opportunity)": 0.10,
         "Pass (after retake)": 0.10,
@@ -25,7 +24,6 @@ def generate_student_data(n=2700):
     for _ in range(n):
         status = np.random.choice(statuses, p=probs)
 
-        # Генерация признаков в зависимости от статуса
         if status == "Scholarship":
             regMid = np.random.randint(90, 101)
             regEnd = np.random.randint(90, 101)
@@ -51,7 +49,7 @@ def generate_student_data(n=2700):
             regEnd = np.random.randint(30, 50)
             Final = np.random.randint(30, 45)
             attendance = np.random.randint(60, 100)
-        elif status == "Fail (total < 45)":
+        elif status == "Fail (total < 25)":
             regMid = np.random.randint(0, 50)
             regEnd = np.random.randint(0, 50)
             Final = np.random.randint(0, 50)
@@ -72,7 +70,6 @@ def generate_student_data(n=2700):
             Final = np.random.randint(0, 24)
             attendance = np.random.randint(50, 101)
 
-        # Добавляем небольшой шум, чтобы данные были реалистичными
         regMid = max(0, min(100, regMid + np.random.randint(-5, 6)))
         regEnd = max(0, min(100, regEnd + np.random.randint(-5, 6)))
         Final = max(0, min(100, Final + np.random.randint(-5, 6)))
@@ -82,10 +79,8 @@ def generate_student_data(n=2700):
 
     df = pd.DataFrame(data, columns=["regMid", "regEnd", "Final", "attendance", "status"])
 
-    # Добавляем дополнительные редкие случаи для малых классов
     extra_cases = []
 
-    # Scholarship
     for _ in range(20):
         extra_cases.append([
             np.random.randint(90, 101),
@@ -95,7 +90,6 @@ def generate_student_data(n=2700):
             "Scholarship"
         ])
     
-    # Fail (total <50)
     for _ in range(20):
         extra_cases.append([
             np.random.randint(30, 50),
@@ -105,7 +99,6 @@ def generate_student_data(n=2700):
             "Fail (total < 50)"
         ])
 
-    # FX
     for _ in range(20):
         extra_cases.append([
             np.random.randint(50, 60),

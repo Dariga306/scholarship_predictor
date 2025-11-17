@@ -44,7 +44,7 @@ def academic_outcome_safe(regMid, regEnd, Final, attendance, fx_score=None):
     def total_with(score):
         return regMid * WEIGHTS['mid'] + regEnd * WEIGHTS['end'] + score * WEIGHTS['final']
 
-    if 45 <= Final < 50:
+    if 25 <= Final < 50:
         if fx_score is None:
             return {'status': 'RETAKE', 'category': 'FX ', 'reason': 'retake required', 'total': None}
         if fx_score < FX_UPPER:
